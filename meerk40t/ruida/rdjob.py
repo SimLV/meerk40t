@@ -709,7 +709,7 @@ class RDJob:
         @param array:
         @return:
         """
-        desc = ""
+        desc = "??? Unknown command!"
         if array[0] < 0x80:
             if self.channel:
                 self.channel(f"NOT A COMMAND: {array[0]}")
@@ -1238,7 +1238,7 @@ class RDJob:
                 index = array[2]
                 desc = f"Element Array Mirror ({index})"
         else:
-            desc = "Unknown Command!"
+            desc = "??? Unknown Command!"
         if self.channel:
             self.channel(f"-**-> {str(bytes(array).hex())}\t({desc})")
 

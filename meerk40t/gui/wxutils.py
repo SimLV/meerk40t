@@ -546,6 +546,7 @@ class TextCtrl(wx.TextCtrl):
         check="",
         limited=False,
         nonzero=False,
+        on_selection_changed=None,
     ):
         if value is None:
             value = ""
@@ -620,6 +621,21 @@ class TextCtrl(wx.TextCtrl):
         if limited:
             self.SetMaxSize(dip_size(self, _MAX_WIDTH, -1))
         set_color_according_to_theme(self, "text_bg", "text_fg")
+
+        if on_selection_changed:
+            self.on_selection_changed = on_selection_changed
+
+            # There is no on_selection_changed event in wx library
+            self.timer = wx.Timer(self)
+
+            self.Bind(wx.EVT_TIMER, self._on_timer, self.timer)
+            self.Bind(wx.EVT_WINDOW_DESTROY, self.on_destroy)
+
+            self.timer.Start(100)
+        else:
+            self.timer = None
+
+        self.last_selection = self.GetSelection()
 
     def validate_widths(self):
         minpattern = "0000"
@@ -765,6 +781,11 @@ class TextCtrl(wx.TextCtrl):
         self.lower_limit = range_min
         self.upper_limit = range_max
 
+    def clear_selection(self):
+        self.SelectNone()
+        self.last_selection = self.GetSelection()
+
+
     def prevalidate(self, origin=None):
         # Check whether the field is okay, if not then put it to the last value
         txt = super().GetValue()
@@ -824,7 +845,7 @@ class TextCtrl(wx.TextCtrl):
                 self._action_routine()
             finally:
                 self._event_generated = None
-        self.SelectNone()
+        self.clear_selection()
         # We assume it's been dealt with, so we recolor...
         self.SetModified(False)
         self.warn_status = self._warn_status
@@ -839,7 +860,7 @@ class TextCtrl(wx.TextCtrl):
                 self._action_routine()
             finally:
                 self._event_generated = None
-        self.SelectNone()
+        self.clear_selection()
         # We assume it's been dealt with, so we recolor...
         self.SetModified(False)
         self.warn_status = self._warn_status
@@ -876,6 +897,19 @@ class TextCtrl(wx.TextCtrl):
             )
         self.PopupMenu(menu)
         menu.Destroy()
+
+    def _on_timer(self, event):
+        current_selection = self.GetSelection()
+        if current_selection != self.last_selection:
+            self.last_selection = current_selection
+            self.on_selection_changed(current_selection)
+
+    def on_destroy(self, event):
+        if self.timer:
+            if self.timer.IsRunning():
+                self.timer.Stop()
+            self.timer = None
+            event.Skip()
 
     @property
     def warn_status(self):

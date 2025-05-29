@@ -34,8 +34,13 @@ class BlobPropertyPanel(ScrolledPanel):
         )
         self.option_view.SetSelection(0)
         self.text_blob = TextCtrl(
-            self, id=wx.ID_ANY, value="", style=wx.TE_MULTILINE | wx.TE_READONLY
+            self, id=wx.ID_ANY, value="", style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2,
+            on_selection_changed = self.on_selection_changed
         )
+
+        self.highlight_attr = wx.TextAttr()
+        self.highlight_attr.SetBackgroundColour(wx.GREEN)
+
         self.Bind(wx.EVT_RADIOBOX, self.on_option_view, self.option_view)
         self.__set_properties()
         self.__do_layout()
@@ -46,6 +51,23 @@ class BlobPropertyPanel(ScrolledPanel):
             return True
         else:
             return False
+
+    def on_selection_changed(self, selection_pair):
+        sel_start, sel_end = selection_pair
+
+        if sel_start == sel_end:
+            return
+
+        sel_len = sel_end - sel_start
+        text = self.text_blob.GetValue()
+        selection = text[sel_start:sel_end]
+
+        self.text_blob.SetStyle(0, len(text), self.text_blob.GetDefaultStyle())
+
+        nxt = text.find(selection)
+        while nxt >= 0:
+            self.text_blob.SetStyle(nxt, nxt + sel_len, self.highlight_attr)
+            nxt = text.find(selection, nxt + sel_len)
 
     def set_widgets(self, node):
         self.panel_id.set_widgets(node)
